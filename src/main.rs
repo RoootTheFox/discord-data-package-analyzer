@@ -47,7 +47,7 @@ fn get_message_counts(data_path:PathBuf) {
                     messages_attachments_in_channel += 1;
                 }
 
-                //println!("{}", std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap());
+                println!("{}", std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap());
 
                 let mut content = url_re.replace_all(std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap(), "").to_string();
                 content = re.replace_all(&*content, " ").to_string();
