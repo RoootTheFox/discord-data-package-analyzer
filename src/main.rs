@@ -37,7 +37,7 @@ fn get_message_counts(data_path: PathBuf) {
 
     let mut word_counts: HashMap<String, u32> = HashMap::new();
 
-    let re = Regex::new(r"[^A-Za-z\d]").unwrap();
+    // i HATE regex!!! but i still need it!!!
     let url_re = Regex::new(r"https?://(www\.)?[-a-zA-Z\d@:%._+~#=]{1,256}\.[a-zA-Z\d()]{1,6}\b([-a-zA-Z\d()!@:%_+.~#?&/=]*)").unwrap();
 
     data_path.read_dir().unwrap().for_each(|entry| {
@@ -61,36 +61,25 @@ fn get_message_counts(data_path: PathBuf) {
                 .for_each(|record| {
                     messages_in_channel += 1;
                     let unwrapped_record = record.unwrap();
-                    if unwrapped_record[3].as_bytes().len() > 0 {
+                    if !unwrapped_record[3].is_empty() {
                         messages_attachments_in_channel += 1;
                     }
 
                     //println!("{}", std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap());
 
-                    let mut content = url_re
-                        .replace_all(
-                            std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap(),
-                            "",
-                        )
-                        .to_string();
-                    content = re.replace_all(&*content, " ").to_string();
+                    // i reeeaaalllyyy wanna get rid of this regex but i do NOT want to implement url matching :(
+                    let content = url_re.replace_all(&unwrapped_record[2], "");
 
-                    while content.contains("  ") {
-                        content = content.replace("  ", " ");
-                    }
+                    // this sucks for performance, but i can't use retain because i need to replace w/ space
+                    let content: String = content
+                        .chars()
+                        .map(|c| if !c.is_ascii_alphanumeric() { ' ' } else { c })
+                        .collect();
 
-                    if content.starts_with(" ") {
-                        content.remove(0).to_string();
-                    }
-
-                    content = content.to_lowercase();
-
-                    content.split(" ").for_each(|word| {
-                        if word.len() > 1 {
-                            if !word.chars().all(|c| c.is_numeric()) {
-                                let count = word_counts.entry(word.to_string()).or_insert(0);
-                                *count += 1;
-                            }
+                    content.to_lowercase().split_whitespace().for_each(|word| {
+                        if word.len() > 1 && !word.chars().all(|c| c.is_ascii_digit()) {
+                            let count = word_counts.entry(word.into()).or_insert(0);
+                            *count += 1;
                         }
                     });
                 });
