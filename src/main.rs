@@ -1,17 +1,29 @@
+mod structs;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::collections::HashMap;
 use regex::Regex;
+use crate::structs::DiscordUser;
 
 fn main() {
-    println!("Hello, world!");
-
-    let package_path:&Path = Path::new("package");
+    let package_path = Path::new("package");
 
     let account = fs::read_to_string(package_path.join("account/user.json")).expect("Something went wrong reading the file");
-    let account_parsed = json::parse(&account).expect("Failed to parse JSON");
+    let account: DiscordUser = serde_json::from_str(&account).unwrap();
 
-    println!("Analyzing data dump for {}#{}", account_parsed["username"].as_str().unwrap(), account_parsed["discriminator"].as_i16().unwrap());
+    println!("[+] analyzing data dump for {}", account.username);
+
+    let mut money_spent:i32 = 0;
+    for payment in account.money_wastes {
+        let money_change = payment.amount - payment.amount_refunded;
+
+        money_spent += money_change as i32;
+    }
+
+    println!(" money wasted on discord nitro: {} USD", money_spent / 100);
+
+    println!("[+] analyzing messages idfk");
 
     get_message_counts(package_path.join("messages"));
 }
@@ -47,7 +59,7 @@ fn get_message_counts(data_path:PathBuf) {
                     messages_attachments_in_channel += 1;
                 }
 
-                println!("{}", std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap());
+                //println!("{}", std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap());
 
                 let mut content = url_re.replace_all(std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap(), "").to_string();
                 content = re.replace_all(&*content, " ").to_string();
