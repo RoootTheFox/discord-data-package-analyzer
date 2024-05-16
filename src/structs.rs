@@ -1,5 +1,5 @@
-use std::str::FromStr;
 use serde::Deserialize;
+use std::str::FromStr;
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct DiscordUser {

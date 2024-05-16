@@ -1,20 +1,21 @@
 mod structs;
 
+use crate::structs::DiscordUser;
+use regex::Regex;
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::collections::HashMap;
-use regex::Regex;
-use crate::structs::DiscordUser;
 
 fn main() {
     let package_path = Path::new("package");
 
-    let account = fs::read_to_string(package_path.join("account/user.json")).expect("Something went wrong reading the file");
+    let account = fs::read_to_string(package_path.join("account/user.json"))
+        .expect("Something went wrong reading the file");
     let account: DiscordUser = serde_json::from_str(&account).unwrap();
 
     println!("[+] analyzing data dump for {}", account.username);
 
-    let mut money_spent:i32 = 0;
+    let mut money_spent: i32 = 0;
     for payment in account.money_wastes {
         let money_change = payment.amount - payment.amount_refunded;
 
@@ -28,13 +29,13 @@ fn main() {
     get_message_counts(package_path.join("messages"));
 }
 
-fn get_message_counts(data_path:PathBuf) {
+fn get_message_counts(data_path: PathBuf) {
     // its very unlikely that the amount of messages will be more than the max of an unsigned 32bit integer
-    let mut total_message_count:u32 = 0;
-    let mut total_messages_with_attachements:u32 = 0;
-    let mut direct_messages:u32 = 0;
+    let mut total_message_count: u32 = 0;
+    let mut total_messages_with_attachements: u32 = 0;
+    let mut direct_messages: u32 = 0;
 
-    let mut word_counts:HashMap<String, u32> = HashMap::new();
+    let mut word_counts: HashMap<String, u32> = HashMap::new();
 
     let re = Regex::new(r"[^A-Za-z\d]").unwrap();
     let url_re = Regex::new(r"https?://(www\.)?[-a-zA-Z\d@:%._+~#=]{1,256}\.[a-zA-Z\d()]{1,6}\b([-a-zA-Z\d()!@:%_+.~#?&/=]*)").unwrap();
@@ -43,46 +44,56 @@ fn get_message_counts(data_path:PathBuf) {
         let entry = entry.unwrap();
         let path = entry.path();
         if entry.path().is_dir() {
-            let message_channel = fs::read_to_string(path.join("channel.json")).expect("Something went wrong reading the file");
-            let message_channel_parsed = json::parse(&message_channel).expect("Failed to parse JSON");
+            let message_channel = fs::read_to_string(path.join("channel.json"))
+                .expect("Something went wrong reading the file");
+            let message_channel_parsed =
+                json::parse(&message_channel).expect("Failed to parse JSON");
 
-            let messages_raw = fs::read_to_string(path.join("messages.csv")).expect("Something went wrong reading the file");
+            let messages_raw = fs::read_to_string(path.join("messages.csv"))
+                .expect("Something went wrong reading the file");
 
-            let mut messages_in_channel:u32 = 0;
-            let mut messages_attachments_in_channel:u32 = 0;
+            let mut messages_in_channel: u32 = 0;
+            let mut messages_attachments_in_channel: u32 = 0;
 
             //println!("ID: {}", message_channel_parsed["id"].as_str().unwrap());
-            csv::Reader::from_reader(messages_raw.as_bytes()).records().for_each(|record| {
-                messages_in_channel += 1;
-                let unwrapped_record = record.unwrap();
-                if unwrapped_record[3].as_bytes().len() > 0 {
-                    messages_attachments_in_channel += 1;
-                }
-
-                //println!("{}", std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap());
-
-                let mut content = url_re.replace_all(std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap(), "").to_string();
-                content = re.replace_all(&*content, " ").to_string();
-
-                while content.contains("  ") {
-                    content = content.replace("  ", " ");
-                }
-
-                if content.starts_with(" ") {
-                    content.remove(0).to_string();
-                }
-
-                content = content.to_lowercase();
-
-                content.split(" ").for_each(|word| {
-                    if word.len() > 1 {
-                        if !word.chars().all(|c| c.is_numeric()) {
-                            let count = word_counts.entry(word.to_string()).or_insert(0);
-                            *count += 1;
-                        }
+            csv::Reader::from_reader(messages_raw.as_bytes())
+                .records()
+                .for_each(|record| {
+                    messages_in_channel += 1;
+                    let unwrapped_record = record.unwrap();
+                    if unwrapped_record[3].as_bytes().len() > 0 {
+                        messages_attachments_in_channel += 1;
                     }
+
+                    //println!("{}", std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap());
+
+                    let mut content = url_re
+                        .replace_all(
+                            std::str::from_utf8(unwrapped_record[2].as_bytes()).unwrap(),
+                            "",
+                        )
+                        .to_string();
+                    content = re.replace_all(&*content, " ").to_string();
+
+                    while content.contains("  ") {
+                        content = content.replace("  ", " ");
+                    }
+
+                    if content.starts_with(" ") {
+                        content.remove(0).to_string();
+                    }
+
+                    content = content.to_lowercase();
+
+                    content.split(" ").for_each(|word| {
+                        if word.len() > 1 {
+                            if !word.chars().all(|c| c.is_numeric()) {
+                                let count = word_counts.entry(word.to_string()).or_insert(0);
+                                *count += 1;
+                            }
+                        }
+                    });
                 });
-            });
 
             total_message_count += messages_in_channel;
             total_messages_with_attachements += messages_attachments_in_channel;
@@ -94,7 +105,10 @@ fn get_message_counts(data_path:PathBuf) {
     });
 
     println!("Total messages: {}", total_message_count);
-    println!("Messages with attachments: {}", total_messages_with_attachements);
+    println!(
+        "Messages with attachments: {}",
+        total_messages_with_attachements
+    );
     println!("Direct messages: {}", direct_messages);
 
     println!("Analyzing word counts ...");
