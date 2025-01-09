@@ -1,5 +1,4 @@
 use serde::Deserialize;
-use std::str::FromStr;
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct DiscordUser {
@@ -16,8 +15,8 @@ pub(crate) struct DiscordUser {
     pub phone: Option<String>,
     pub temp_banned_until: Option<String>,
     pub ip: Option<String>,
-
     pub connections: Vec<DiscordConnection>,
+
     // stuff
     #[serde(rename = "payments")]
     pub money_wastes: Vec<DiscordPayment>,
