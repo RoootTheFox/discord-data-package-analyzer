@@ -55,6 +55,11 @@ fn get_message_counts(data_path: PathBuf) {
             let mut messages_in_channel: u32 = 0;
             let mut messages_attachments_in_channel: u32 = 0;
 
+            // i wish i remembered what this does
+            if message_channel_parsed["type"].as_i8().unwrap() == 1 {
+                return;
+            }
+
             //println!("ID: {}", message_channel_parsed["id"].as_str().unwrap());
             csv::Reader::from_reader(messages_raw.as_bytes())
                 .records()
@@ -100,7 +105,7 @@ fn get_message_counts(data_path: PathBuf) {
     );
     println!("Direct messages: {}", direct_messages);
 
-    println!("Analyzing word counts ...");
+    println!("[+] analyzing word counts ...");
     println!("Total different words: {}", word_counts.len());
 
     let mut count_vec: Vec<_> = word_counts.iter().collect();
@@ -108,7 +113,7 @@ fn get_message_counts(data_path: PathBuf) {
 
     println!("Most frequent words: ");
     let mut i = 0;
-    for (word, count) in count_vec.iter().take(200) {
+    for (word, count) in count_vec.iter().take(20) {
         i += 1;
         println!("{}: {} ({})", i, word, count);
     }
